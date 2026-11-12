@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+
+<html lang="ja">
+
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>
+    AR Face Magic Studio
+  </title>
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js">
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-face-aframe.prod.js">
+  </script>
+  <style>
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: #f4f0ff;
+      color: #292043;
+      font-family: Arial, 'Noto Sans JP', sans-serif
+    }
+
+    header {
+      padding: 22px 32px;
+      color: white;
+      background: linear-gradient(110deg, #883ff0, #4777ec);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px
+    }
+
+    h1 {
+      font-size: 27px;
+      margin: 0 0 6px
+    }
+
+    header p {
+      margin: 0
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 18px;
+      padding: 20px;
+      max-width: 1450px;
+      margin: auto
+    }
+
+    .panel {
+      background: white;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 8px 30px #4b329b15
+    }
+
+    .panel h2 {
+      font-size: 18px;
+      margin: 0 0 18px
+    }
+
+    .filter-btn {
+      width: 100%;
+      padding: 14px;
+      text-align: left;
+      background: #faf9ff;
+      border: 1px solid #e1d7f8;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      font-size: 16px
+    }
+
+    .filter-btn.active {
+      border-color: #8446ed;
+      background: #eadcff
+    }
+
+    .camera-panel {
+      min-width: 0
+    }
+
+    .camera-box {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      border: 4px solid white;
+      border-radius: 22px;
+      background: #171321;
+      overflow: hidden;
+      box-shadow: 0 10px 30px #4b329b25;
+      isolation: isolate
+    }
+
+    .camera-box a-scene {
+      position: absolute !important;
+      inset: 0;
+      width: 100% !important;
+      height: 100% !important;
+      z-index: 2;
+      background: transparent !important
+    }
+
+    .camera-box .camera-label {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      z-index: 10;
+      background: #2b1b4bbb;
+      color: white;
+      border-radius: 10px;
+      padding: 10px 14px;
+      pointer-events: none
+    }
+
+    .camera-box video.ar-camera-video {
+      position: absolute !important;
+      inset: 0 !important;
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: contain !important;
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+      z-index: 1 !important;
+      pointer-events: none
+    }
+
+    .camera-box canvas {
+      background: transparent !important
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 20px 0
+    }
+
+    .action-btn {
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(110deg, #a052ff, #6532dd);
+      color: white;
+      font-weight: bold;
+      padding: 13px 17px;
+      cursor: pointer
+    }
+
+    .action-btn:disabled {
+      opacity: .6;
+      cursor: wait
+    }
+
+    .color-options {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap
+    }
+
+    .color-btn {
+      width: 36px;
+      height: 36px;
+      border: 3px solid white;
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px #ccc;
+      cursor: pointer
+    }
+
+    .color-btn.active {
+      box-shadow: 0 0 0 3px #8044ee
+    }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: #8444ee
+    }
+
+    .move-controls {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px
+    }
+
+    .move-controls button {
+      padding: 12px;
+      border: 0;
+      border-radius: 10px;
+      background: #e8d9ff;
+      color: #4e2c9c;
+      font-size: 19px;
+      cursor: pointer
+    }
+
+    .status {
+      text-align: center;
+      color: #675b7d;
+      margin: 0 0 15px;
+      font-size: 14px
+    }
+
+    @media(max-width:950px) {
+      .layout {
+        grid-template-columns: 1fr
+      }
+
+      .camera-box {
+        aspect-ratio: 4 / 3
+      }
+
+      header {
+        flex-direction: column;
+        text-align: center
+      }
+    }
+
+    .camera-box .a-canvas {
+      background: transparent !important;
+    }
+
+    .camera-box>a-scene {
+      background: transparent !important;
+    }
+
+    .camera-box>video.ar-camera-video {
+      z-index: 1 !important;
+    }
+
+    .camera-box>a-scene {
+      z-index: 2 !important;
+    }
+
+    #handheldProps {
+      position: absolute;
+      right: 1%;
+      bottom: -5px;
+      width: clamp(135px, 31%, 245px);
+      height: 90%;
+      z-index: 8;
+      pointer-events: none;
+      overflow: hidden
+    }
+
+    .held-prop {
+      display: none;
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 8px 10px #160e3380);
+      transform-origin: 50% 90%;
+      animation: heldFloat 3.5s ease-in-out infinite
+    }
+
+    #handheldProps[data-filter="king"] #kingProp,
+    #handheldProps[data-filter="witch"] #witchProp {
+      display: block
+    }
+
+    @keyframes heldFloat {
+
+      0%,
+      100% {
+        transform: translateY(0) rotate(-1deg)
+      }
+
+      50% {
+        transform: translateY(-5px) rotate(1deg)
+      }
+    }
+
+    @media(max-width:600px) {
+      #handheldProps {
+        width: 36%;
+        height: 75%;
+        right: 0
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div>
+      <h1>
+        ✨ AR顔変身アプリ
+      </h1>
+      <p>
+        カメラで顔を認識して、ARフィルターを楽しもう！
+      </p>
+    </div>
+    <strong>
+      AR Face Magic Studio
+    </strong>
+  </header>
+  <div class="layout">
+    <aside class="panel">
+      <h2>
+        ✨ フィルターを選ぶ
+      </h2>
+      <button class="filter-btn active" data-filter="glasses">
+        🕶️ メガネ
+      </button>
+      <button class="filter-btn" data-filter="king">
+        👑 王様
+      </button>
+      <button class="filter-btn" data-filter="witch">
+        🧙 魔女
+      </button>
+      <button class="filter-btn" data-filter="rabbit">
+        🐰 うさぎ
+      </button>
+
+      <button class="filter-btn" data-filter="none">
+        ❌ フィルターなし
+      </button>
+
+    </aside>
+    <main class="camera-panel">
+      <div class="camera-box" id="cameraBox">
+        <div class="camera-label">
+          📷 AR Face Camera
+        </div>
+        <a-scene device-orientation-permission-ui="enabled: false" embedded=""
+          mindar-face="autoStart: false; uiLoading: no; uiScanning: no; uiError: no; filterMinCF: 0.8; filterBeta: 0.1"
+          renderer="colorManagement: true; alpha: true; antialias: false; precision: mediump"
+          vr-mode-ui="enabled: false">
+          <a-assets>
+          </a-assets>
+          <a-entity mindar-face-target="anchorIndex: 168">
+            <a-entity id="rapperGlasses" class="filter-content" data-base-scale="0.82" position="0 -0.105 0.16">
+              <a-entity id="rapperFrame">
+                <a-box position="-0.29 0 0" width="0.53" height="0.25" depth="0.035" color="#111018"
+                  material="metalness:0.55;roughness:0.3"></a-box>
+                <a-box position="0.29 0 0" width="0.53" height="0.25" depth="0.035" color="#111018"
+                  material="metalness:0.55;roughness:0.3"></a-box>
+                <a-plane position="-0.29 0 0.024" width="0.46" height="0.23" color="#17102d"
+                  material="opacity:0.88;transparent:true;side:double"></a-plane>
+                <a-plane position="0.29 0 0.024" width="0.46" height="0.23" color="#17102d"
+                  material="opacity:0.88;transparent:true;side:double"></a-plane>
+                <a-box position="0 0.035 0.015" width="0.13" height="0.055" depth="0.05" color="#d5b66d"></a-box>
+                <a-box position="-0.29 0.145 0.018" width="0.55" height="0.035" depth="0.05" color="#d5b66d"></a-box>
+                <a-box position="0.29 0.145 0.018" width="0.55" height="0.035" depth="0.05" color="#d5b66d"></a-box>
+                <a-box position="-0.58 0.03 -0.03" width="0.18" height="0.065" depth="0.055" color="#111018"></a-box>
+                <a-box position="0.58 0.03 -0.03" width="0.18" height="0.065" depth="0.055" color="#111018"></a-box>
+                <a-plane position="-0.36 0.045 0.027" rotation="0 0 -12" width="0.13" height="0.025" color="#ffffff"
+                  material="opacity:0.26;transparent:true"></a-plane>
+                <a-plane position="0.22 0.045 0.027" rotation="0 0 -12" width="0.13" height="0.025" color="#ffffff"
+                  material="opacity:0.26;transparent:true"></a-plane>
+              </a-entity>
+            </a-entity>
+          </a-entity>
+          <a-camera active="false" look-controls="enabled: false" position="0 0 0">
+          </a-camera>
+          <a-entity mindar-face-target="anchorIndex: 10">
+            <a-entity id="kingFilter" visible="false">
+              <a-entity class="filter-content" data-base-scale="0.67" position="0 0.29 0.03">
+                <a-cylinder color="#ffd000" height="0.25" radius="0.46" segments-radial="8">
+                </a-cylinder>
+                <a-cone color="#ffd000" height="0.42" position="-0.30 0.26 0" radius-bottom="0.14">
+                </a-cone>
+                <a-cone color="#ffd000" height="0.48" position="0 0.28 0" radius-bottom="0.14">
+                </a-cone>
+                <a-cone color="#ffd000" height="0.42" position="0.30 0.26 0" radius-bottom="0.14">
+                </a-cone>
+                <a-sphere color="#e52a60" position="0 0.08 0.44" radius="0.09">
+                </a-sphere>
+              </a-entity>
+            </a-entity>
+          </a-entity>
+          <a-entity mindar-face-target="anchorIndex: 10">
+            <a-entity id="witchFilter" visible="false">
+              <a-entity class="filter-content" data-base-scale="0.57" position="0 0.27 0.04">
+                <a-cylinder color="#51218a" height="0.045" radius="0.72">
+                </a-cylinder>
+                <a-cone color="#642ba2" height="0.90" position="0 0.43 0" radius-bottom="0.46">
+                </a-cone>
+                <a-cylinder color="#ffb900" height="0.09" position="0 0.12 0" radius="0.39">
+                </a-cylinder>
+              </a-entity>
+            </a-entity>
+          </a-entity>
+          <a-entity mindar-face-target="anchorIndex: 10">
+            <a-entity id="rabbitFilter" visible="false">
+              <a-entity class="filter-content" data-base-scale="0.73" position="0 0.1 0.04">
+                <a-sphere color="#ffffff" position="-0.30 0.75 0" scale="0.21 0.62 0.12">
+                </a-sphere>
+                <a-sphere color="#ffffff" position="0.30 0.75 0" scale="0.21 0.62 0.12">
+                </a-sphere>
+                <a-sphere color="#ff91be" position="-0.30 0.75 0.11" scale="0.12 0.47 0.035">
+                </a-sphere>
+                <a-sphere color="#ff91be" position="0.30 0.75 0.11" scale="0.12 0.47 0.035">
+                </a-sphere>
+              </a-entity>
+            </a-entity>
+          </a-entity>
+          <a-entity mindar-face-target="anchorIndex: 1">
+            <a-entity id="rabbitNose" visible="false">
+              <a-entity class="filter-content" data-base-scale="0.85" position="0 0 0.12">
+                <a-sphere color="#ff85b5" radius="0.09" scale="1.35 0.8 0.5"></a-sphere>
+                <a-sphere color="#fff1f7" position="-0.025 0.018 0.043" radius="0.022"></a-sphere>
+              </a-entity>
+            </a-entity>
+          </a-entity>
+          <a-entity mindar-face-target="anchorIndex: 13">
+            <a-entity id="rabbitMouth" visible="false">
+              <a-entity class="filter-content" data-base-scale="0.85" position="0 -0.065 0.13">
+                <a-sphere color="#ffffff" position="-0.065 0 0" scale="0.075 0.065 0.028"></a-sphere>
+                <a-sphere color="#ffffff" position="0.065 0 0" scale="0.075 0.065 0.028"></a-sphere>
+                <a-box color="#3b2833" position="0 0.038 0.025" width="0.012" height="0.07" depth="0.012"></a-box>
+                <a-torus color="#3b2833" position="-0.038 -0.015 0.033" radius="0.042" radius-tubular="0.008" arc="180"
+                  rotation="0 0 180"></a-torus>
+                <a-torus color="#3b2833" position="0.038 -0.015 0.033" radius="0.042" radius-tubular="0.008" arc="180"
+                  rotation="0 0 180"></a-torus>
+                <a-box color="#ffffff" position="-0.024 -0.092 0.04" width="0.042" height="0.06" depth="0.015"></a-box>
+                <a-box color="#ffffff" position="0.024 -0.092 0.04" width="0.042" height="0.06" depth="0.015"></a-box>
+              </a-entity>
+            </a-entity>
+          </a-entity>
+
+          </a-entity>
+          </a-entity>
+
+
+          <a-entity mindar-face-target="anchorIndex: 13">
+            <a-entity id="mouthStars" position="0 -0.06 0.48" visible="false">
+              <a-sphere color="#ffe16a" position="-0.16 0.02 0" radius="0.07">
+              </a-sphere>
+              <a-sphere color="#ff87ca" position="0.12 0.12 0" radius="0.055">
+              </a-sphere>
+              <a-sphere color="#9c83ff" position="0.02 -0.12 0" radius="0.045">
+              </a-sphere>
+              <a-entity animation="property: rotation; to: 0 0 360; loop: true; dur: 2400; easing: linear">
+                <a-torus color="#fff0a0" radius="0.19" radius-tubular="0.012">
+                </a-torus>
+              </a-entity>
+              <a-octahedron animation="property: rotation; to: 0 360 360; loop: true; dur: 900; easing: linear"
+                color="#ffe16a" position="-0.22 0.02 0" radius="0.085">
+              </a-octahedron>
+              <a-octahedron animation="property: rotation; to: 0 360 360; loop: true; dur: 1080; easing: linear"
+                color="#ff8ecf" position="0.21 0.08 0" radius="0.085">
+              </a-octahedron>
+              <a-octahedron animation="property: rotation; to: 0 360 360; loop: true; dur: 1260; easing: linear"
+                color="#a6efff" position="0 0.24 0" radius="0.085">
+              </a-octahedron>
+              <a-octahedron animation="property: rotation; to: 0 360 360; loop: true; dur: 1440; easing: linear"
+                color="#fff6b4" position="-0.1 -0.22 0" radius="0.085">
+              </a-octahedron>
+            </a-entity>
+          </a-entity>
+          <a-entity mindar-face-target="anchorIndex: 10">
+            <a-entity id="blinkSparkles" position="0 0.18 0.3" visible="false">
+              <a-sphere color="#ffda55" position="-0.78 0.12 0" radius="0.08">
+              </a-sphere>
+              <a-sphere color="#fff4b2" position="0.78 0.18 0" radius="0.065">
+              </a-sphere>
+              <a-sphere color="#f3a8ff" position="-0.55 0.48 0" radius="0.06">
+              </a-sphere>
+              <a-sphere color="#8eeaff" position="0.54 0.53 0" radius="0.07">
+              </a-sphere>
+              <a-octahedron color="#ffdf58" position="-0.7 0.2 .1" radius=".10">
+              </a-octahedron>
+              <a-octahedron color="#ffdf58" position="0.7 0.2 .1" radius=".10">
+              </a-octahedron>
+              <a-octahedron color="#ffdf58" position="-0.5 0.65 .1" radius=".10">
+              </a-octahedron>
+              <a-octahedron color="#ffdf58" position="0.5 0.65 .1" radius=".10">
+              </a-octahedron>
+            </a-entity>
+          </a-entity>
+        </a-scene>
+        <div aria-hidden="true" id="handheldProps">
+          <svg class="held-prop" id="kingProp" viewbox="0 0 250 500" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <lineargradient id="blade" x1="0" x2="1">
+                <stop stop-color="#73c9ff"></stop>
+                <stop offset=".48" stop-color="#f6ffff"></stop>
+                <stop offset="1" stop-color="#4e91f4"></stop>
+              </lineargradient>
+              <lineargradient id="gold" x1="0" x2="1">
+                <stop stop-color="#b96a1b"></stop>
+                <stop offset=".5" stop-color="#ffe88a"></stop>
+                <stop offset="1" stop-color="#d8892e"></stop>
+              </lineargradient>
+            </defs>
+            <g transform="rotate(12 125 365)">
+              <path d="M125 24 L159 88 L149 301 L125 322 L101 301 L91 88Z" fill="url(#blade)" stroke="#3556b4"
+                stroke-linejoin="round" stroke-width="8"></path>
+              <path d="M125 34 L125 307" opacity=".85" stroke="white" stroke-width="7"></path>
+              <path d="M79 311 Q125 329 171 311 L183 340 Q125 363 67 340Z" fill="url(#gold)" stroke="#975322"
+                stroke-width="7"></path>
+              <circle cx="125" cy="331" fill="#ff4e90" r="16" stroke="#fff0a4" stroke-width="5"></circle>
+              <rect fill="#5942a6" height="89" rx="11" stroke="#e9b65e" stroke-width="7" width="26" x="112" y="350">
+              </rect>
+              <path d="M115 367 L136 382 M115 391 L136 406 M115 416 L136 430" stroke="#dcb6ff" stroke-width="5"></path>
+              <circle cx="125" cy="447" fill="url(#gold)" r="19" stroke="#975322" stroke-width="5"></circle>
+            </g>
+            <path
+              d="M73 500 L66 463 Q65 450 78 449 Q85 448 91 456 L88 431 Q88 420 99 418 Q111 418 113 429 L116 410 Q117 400 128 402 Q139 404 138 416 L141 424 Q150 412 159 420 Q169 426 163 441 L158 468 Q158 488 148 500Z"
+              fill="#f4b78e" stroke="#a8674f" stroke-width="5"></path>
+            <path d="M91 455 Q112 464 142 450" fill="none" stroke="#d98d70" stroke-width="4"></path>
+          </svg>
+          <svg class="held-prop" id="witchProp" viewbox="0 0 250 500" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <lineargradient id="wand" x1="0" x2="1">
+                <stop stop-color="#54208c"></stop>
+                <stop offset=".5" stop-color="#b987fa"></stop>
+                <stop offset="1" stop-color="#552099"></stop>
+              </lineargradient>
+            </defs>
+            <g transform="rotate(12 125 365)">
+              <rect fill="url(#wand)" height="300" rx="12" stroke="#e6b35b" stroke-width="6" width="27" x="112" y="138">
+              </rect>
+              <path d="M110 350 L140 350 M110 378 L140 378 M110 405 L140 405" stroke="#ffdf7d" stroke-width="8"></path>
+              <path d="M125 15 L146 62 L198 66 L159 100 L171 153 L125 126 L79 153 L91 100 L52 66 L104 62Z"
+                fill="#ffdf65" stroke="#e89238" stroke-linejoin="round" stroke-width="8"></path>
+              <path d="M125 38 L125 116 M85 80 L166 80" stroke="#fff9c6" stroke-linecap="round" stroke-width="8"></path>
+              <circle cx="47" cy="154" fill="#ffc4ff" r="9"></circle>
+              <circle cx="205" cy="158" fill="#9eeaff" r="12"></circle>
+              <path d="M49 18 L55 34 L71 40 L55 46 L49 62 L43 46 L27 40 L43 34Z" fill="#f9b4ff"></path>
+              <path d="M205 19 L212 37 L230 44 L212 51 L205 69 L198 51 L180 44 L198 37Z" fill="#c4f7ff"></path>
+            </g>
+            <path
+              d="M73 500 L66 463 Q65 450 78 449 Q85 448 91 456 L88 431 Q88 420 99 418 Q111 418 113 429 L116 410 Q117 400 128 402 Q139 404 138 416 L141 424 Q150 412 159 420 Q169 426 163 441 L158 468 Q158 488 148 500Z"
+              fill="#f4b78e" stroke="#a8674f" stroke-width="5"></path>
+            <path d="M91 455 Q112 464 142 450" fill="none" stroke="#d98d70" stroke-width="4"></path>
+          </svg>
+        </div>
+      </div>
+
+      <p class="status" id="expressionStatus">
+        表情認識: 待機中
+      </p>
+      <p class="status" id="statusText">
+        カメラを起動しています...
+      </p>
+    </main>
+
+  </div>
+  <script>
+    const scene = document.querySelector('a-scene');
+    const cameraBox = document.querySelector('#cameraBox');
+    const statusText = document.querySelector('#statusText');
+
+
+    const mouthStars = document.querySelector('#mouthStars');
+    const blinkSparkles = document.querySelector('#blinkSparkles');
+    let faceDetected = false;
+    let lastBlinkTime = 0;
+    let blinkTimer = null;
+
+    const groups = {
+      glasses: ['rapperGlasses'],
+      king: ['kingFilter'],
+      witch: ['witchFilter'],
+      rabbit: ['rabbitFilter', 'rabbitNose', 'rabbitMouth'],
+      none: []
+    };
+    const allIds = [...new Set(Object.values(groups).flat())];
+    const originalColors = new Map();
+    document.querySelectorAll('a-scene [color]').forEach(el => {
+      originalColors.set(el, el.getAttribute('color'));
+    });
+    const initialPositions = new Map();
+    let currentFilter = 'glasses';
+    const currentSize = 1;
+    const offsetX = 0;
+    const offsetY = 0;
+    let cameraStarted = false;
+    let cameraStarting = false;
+
+    function updateTransform() {
+      allIds.forEach(id => {
+        const element = document.getElementById(id);
+        if (!element) return;
+        const content = element.classList.contains('filter-content')
+          ? element : element.querySelector('.filter-content');
+        if (!content) return;
+        if (!initialPositions.has(id)) {
+          initialPositions.set(id, content.object3D.position.clone());
+        }
+        const base = initialPositions.get(id);
+        content.object3D.scale.setScalar(currentSize * Number(content.dataset.baseScale || 1));
+        content.object3D.position.set(base.x + offsetX, base.y + offsetY, base.z);
+      });
+    }
+
+    function showFilter(name) {
+      currentFilter = name;
+      document.getElementById('handheldProps').dataset.filter = name;
+      allIds.forEach(id => {
+        const visible = groups[name].includes(id);
+        document.getElementById(id).setAttribute('visible', visible);
+      });
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === name);
+      });
+      if (name === 'rabbit') { mouthStars.setAttribute('visible', false); mouthStars.object3D.visible = false; }
+      updateTransform();
+      if (cameraStarted) statusText.textContent = 'フィルター: ' + name;
+    }
+
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => showFilter(btn.dataset.filter));
+    });
+
+    function waitForScene() {
+      if (scene.hasLoaded) return Promise.resolve();
+      return new Promise(resolve => scene.addEventListener('loaded', resolve, { once: true }));
+    }
+
+    function getCameraVideo() {
+      return [...document.querySelectorAll('video')].find(v =>
+        v.srcObject && v.srcObject.getVideoTracks().length > 0
+      ) || [...document.querySelectorAll('video')].find(v => v.videoWidth > 0);
+    }
+
+    function fixCameraVideo() {
+      const video = getCameraVideo();
+      if (!video) return false;
+      if (video.parentElement !== cameraBox) cameraBox.insertBefore(video, scene);
+      video.classList.add('ar-camera-video');
+      if (video.videoWidth && video.videoHeight) {
+        cameraBox.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
+      }
+      scene.object3D.background = null;
+      if (scene.renderer) scene.renderer.setClearColor(0x000000, 0);
+      video.style.setProperty('display', 'block', 'important');
+      video.style.setProperty('visibility', 'visible', 'important');
+      video.style.setProperty('opacity', '1', 'important');
+      if (video.paused) video.play().catch(console.warn);
+      return true;
+    }
+
+    async function startFaceTracking() {
+      if (cameraStarted || cameraStarting) return;
+      cameraStarting = true;
+      statusText.textContent = 'カメラを起動しています...';
+      try {
+        await waitForScene();
+        const mindar = scene.systems['mindar-face-system'];
+        if (!mindar) throw new Error('MindAR system not found');
+        await mindar.start();
+        attachExpressionTracking(mindar);
+
+        scene.object3D.background = null;
+        scene.renderer.setClearColor(0x000000, 0);
+        scene.renderer.domElement.style.background = 'transparent';
+        fixCameraVideo();
+        setTimeout(fixCameraVideo, 400);
+        setTimeout(fixCameraVideo, 1200);
+        cameraStarted = true;
+        statusText.textContent = '顔をカメラに向けてください';
+      } catch (error) {
+        console.error('MindAR Start Error:', error);
+        statusText.textContent = 'カメラ起動エラー: ' + error.message;
+      } finally {
+        cameraStarting = false;
+      }
+    }
+
+    scene.addEventListener('targetFound', () => {
+      faceDetected = true;
+      statusText.textContent = '顔を認識しました！';
+    });
+    scene.addEventListener('targetLost', () => {
+      faceDetected = false;
+      mouthStars.setAttribute('visible', false);
+      blinkSparkles.setAttribute('visible', false);
+      statusText.textContent = '顔をカメラに向けてください';
+    });
+    scene.addEventListener('arError', () => {
+      statusText.textContent = 'ARエラー: カメラの設定を確認してください';
+    });
+
+
+
+    function landmarkDistance(a, b) {
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    }
+
+    function readLandmarks(data) {
+      const result = data?.estimateResult || data?.result || data;
+      const candidates = [
+        result?.faceLandmarks,
+        result?.landmarks,
+        result?.metricLandmarks,
+        result?.faceMesh,
+        result?.faces?.[0]?.landmarks,
+        result?.faces?.[0]?.faceLandmarks
+      ];
+      for (let points of candidates) {
+        if (!points) continue;
+        if (Array.isArray(points) && Array.isArray(points[0])) points = points[0];
+        if (Array.isArray(points) && points.length >= 468 && points[13]?.x !== undefined) return points;
+      }
+      return null;
+    }
+
+    let lastExpressionFrame = 0;
+    let wasEyesClosed = false;
+    let expressionFrames = 0;
+
+    function processExpressions(data) {
+      const points = readLandmarks(data);
+      if (!points) {
+        if (expressionFrames === 0) document.querySelector('#expressionStatus').textContent = '表情データを待っています...';
+        return;
+      }
+      const now = performance.now();
+      if (now - lastExpressionFrame < 110) return;
+      lastExpressionFrame = now;
+      expressionFrames++;
+
+      const mouthWidth = landmarkDistance(points[61], points[291]);
+      const mouthGap = landmarkDistance(points[13], points[14]);
+      const mouthRatio = mouthGap / Math.max(mouthWidth, 0.00001);
+      const open = mouthRatio > 0.18;
+      mouthStars.setAttribute('visible', open && currentFilter !== 'rabbit');
+      mouthStars.object3D.visible = open && currentFilter !== 'rabbit';
+      const leftWidth = landmarkDistance(points[33], points[133]);
+      const rightWidth = landmarkDistance(points[362], points[263]);
+      const leftGap = landmarkDistance(points[159], points[145]);
+      const rightGap = landmarkDistance(points[386], points[374]);
+      const leftRatio = leftGap / Math.max(leftWidth, 0.00001);
+      const rightRatio = rightGap / Math.max(rightWidth, 0.00001);
+      const closed = leftRatio < 0.19 && rightRatio < 0.19;
+
+      if (closed && !wasEyesClosed && now - lastBlinkTime > 650) {
+        lastBlinkTime = now;
+        blinkSparkles.setAttribute('visible', true);
+        blinkSparkles.object3D.visible = true;
+        clearTimeout(blinkTimer);
+        blinkTimer = setTimeout(() => { blinkSparkles.setAttribute('visible', false); blinkSparkles.object3D.visible = false; }, 800);
+      }
+      wasEyesClosed = closed;
+
+      const expressionStatus = document.querySelector('#expressionStatus');
+      if (expressionStatus && expressionFrames % 4 === 0) {
+        expressionStatus.textContent = `口: ${open ? '開いています ✨' : '閉じています'}  |  目: ${closed ? '閉じています 🌟' : '開いています'}`;
+      }
+    }
+
+    function attachExpressionTracking(mindar) {
+      const controller = mindar.controller;
+      if (!controller) {
+        document.querySelector('#expressionStatus').textContent = '表情認識: コントローラーが見つかりません';
+        return;
+      }
+      if (controller.__expressionAttached) return;
+      const previous = controller.onUpdate;
+      controller.onUpdate = function (data) {
+        if (typeof previous === 'function') previous.call(this, data);
+        processExpressions(data);
+      };
+      controller.__expressionAttached = true;
+      document.querySelector('#expressionStatus').textContent = '表情認識: 顔をカメラに向けてください';
+    }
+
+    let resizeFrame;
+    function syncCameraLayout() {
+      cancelAnimationFrame(resizeFrame);
+      resizeFrame = requestAnimationFrame(() => {
+        const video = getCameraVideo();
+        if (video?.videoWidth && video?.videoHeight) {
+          cameraBox.style.aspectRatio = `${video.videoWidth} / ${video.videoHeight}`;
+        }
+        if (scene.renderer && scene.camera) {
+          const width = cameraBox.clientWidth;
+          const height = cameraBox.clientHeight;
+          if (width && height) {
+            scene.renderer.setSize(width, height, false);
+            if (scene.camera.isPerspectiveCamera) {
+              scene.camera.aspect = width / height;
+              scene.camera.updateProjectionMatrix();
+            }
+          }
+        }
+      });
+    }
+    window.addEventListener('resize', syncCameraLayout);
+    new ResizeObserver(syncCameraLayout).observe(cameraBox);
+
+    window.addEventListener('load', () => {
+      updateTransform();
+      showFilter('glasses');
+      startFaceTracking();
+      syncCameraLayout();
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,64 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Camera Test</title>
+<style>
+body {
+  background: #171326;
+  color: white;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  padding: 20px;
+}
+video {
+  width: 90%;
+  max-width: 700px;
+  border: 3px solid #9455ff;
+  border-radius: 15px;
+  transform: scaleX(-1);
+}
+button {
+  padding: 15px 30px;
+  background: #8546ee;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<h2>📷 Camera Test</h2>
+<video id="camera" autoplay playsinline muted></video>
+<p id="status">カメラを起動してください</p>
+<button id="start">カメラを起動</button>
+
+<script>
+document.querySelector("#start").onclick = async () => {
+  const video = document.querySelector("#camera");
+  const status = document.querySelector("#status");
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: true,
+      audio: false
+    });
+
+    video.srcObject = stream;
+    await video.play();
+
+    status.textContent = "カメラ起動成功！";
+  } catch (error) {
+    status.textContent =
+      "エラー: " + error.name + " - " + error.message;
+    console.error(error);
+  }
+};
+</script>
+
+</body>
+</html>
